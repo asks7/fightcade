@@ -11,6 +11,7 @@ PORT=${2}
 
 declare -x \
 SOCKS_SERVER="${SERVER}:${PORT}" \
+SOCKS_AUTOADD_LANROUTES=yes \
 SOCKS_DIRECTROUTE_FALLBACK=yes
 
 echo "Socks: ${SERVER}:${PORT}"
