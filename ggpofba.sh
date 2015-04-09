@@ -32,7 +32,7 @@ then
 	fi
 
 	#${WINE} ${FBA} quark:direct, ${ROM}, ${PORT1}, ${IP}, ${PORT2}, ${IP2} &
-	echo $PARAM > ggpofba.log
+	echo $PARAM > ggpofba.sh.log
 	WINEDEBUG=-all \
 	${WINE} ${FBA} ${PARAM} &
 
