@@ -22,12 +22,16 @@ case $1 in
 		socksify ./main.py
 	;;
 	[0-9]* )
-		init_socksify ${1} ${2}
+		init_socksify ${1} ${PORT}
+		socksify ./main.py 2>/dev/null &
+	;;
+	*:* )
+		init_socksify ${1}
 		socksify ./main.py 2>/dev/null &
 	;;
 	*)
 		echo "usage: dante.sh [option] ... [arg] ..."
-		echo -e "-f\t:foreground run"
+		echo -e "-f\t: foreground run"
 	;;
 esac
 

@@ -1,28 +1,40 @@
-#!/bin/sh
+#!/bin/bash
 
 cd "${0%/*}"
 
-[ -z $1 ] && exit 1
+[ -f $HOME/fightcade.log ] && rm $HOME/fightcade*.log -v
 
-export SERVER=${1}
-export PORT=${2}
+function socksify_init () {
+	export SOCKS_DIRECTROUTE_FALLBACK=yes
+	case ${1} in
+	*:* )
+		export SOCKS_SERVER=${1}
+		echo -e "\e92m${SOCKS_SERVER}\e[m"
+	;;
+	* )
+		export SOCKS_SERVER="${1}:${2}"
+		export SOCKS_DIRECTROUTE_FALLBACK=yes
+		echo -e "\e[92m${SOCKS_SERVER}\e[m"
+	esac
+	return 0
+}
 
-[ -f $HOME/fightcade.log ] && rm $HOME/fightcade*.log
+case ${1} in
+	"-f" )
+		socksify_init ${2} ${3}
+		socksify ./main.py
+	;;
+	[0-9]* )
+		socksify_init ${1} ${2}
+		socksify ./main.py 2>/dev/null &
+	;;
+	*:* )
+		socksify_init ${1}
+		socksify ./main.py 2>/dev/null &
+	;;
+	* )
+	;;
+esac
 
-[ "${2}" = "" ] && PORT="1080"
-
-export URL="${SERVER}:${PORT}"
-
-# proxy
-unset ALL_PROXY NO_PROXY
-unset all_proxy http_proxy https_proxy socks_proxy no_proxy
-
-# socksify config
-export UPNP_IGD
-export SOCKS_SERVER=${URL}
-export SOCKS_DIRECTROUTE_FALLBACK=yes
-
-echo "Socks: ${SERVER}:${PORT}"
-
-socksify ./main.py 2>/dev/null &
+exit 0
 
