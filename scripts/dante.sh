@@ -2,7 +2,13 @@
 
 cd "${0%/*}"
 
-[ -f $HOME/fightcade.log ] && rm $HOME/fightcade*.log
+if [ ! -x "$(pwd)/fightcade" ]
+then
+	echo "$(pwd)/fightcade"
+	exit 1
+else
+	PYTHON="$(pwd)/fightcade"
+fi
 
 function socksify_init {
 	[ "${1}" = "" ] && exit 1 || SERVER=${1}
@@ -21,23 +27,29 @@ function socksify_init {
 	return
 }
 
+unset ALL_PROXY NO_PROXY
+unset all_proxy http_proxy https_proxy no_proxy socks_proxy
+
 case ${1} in
-	"-" )
+	"-f" )
 		socksify_init ${2} ${3}
-		socksify ./main.py
+		socksify ${PYTHON}
 	;;
 	[0-9]* )
 		socksify_init ${1} ${2}
-		socksify ./main.py 2>/dev/null &
-	;;
-	*:* )
-		socksify_init ${1}
-		socksify ./main.py 2>/dev/null &
+		socksify ${PYTHON} 2>/dev/null &
 	;;
 	* )
 		echo "usage: dante.sh [option] ... [arg] ..."
+		echo "Options:"
+		echo -e "-f\t: foreground run"
 	;;
 esac
+
+if [ $? = 0 ]
+then
+	[ -f $HOME/fightcade.log ] && rm $HOME/fightcade*.log -v
+fi
 
 exit 0
 
