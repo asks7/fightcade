@@ -2,44 +2,28 @@
 
 cd "${0%/*}"
 
-[ -f $HOME/fightcade.log ] && rm $HOME/fightcade*.log -v
+[ ! -x "$(pwd)/fightcade" ] && exit 1
 
-function socksify_init () {
-	[ "${1}" = "" ] && exit 1 || SERVER=${1}
-	[ "${2}" = "" ] && PORT="8080" || PORT=${2}
+unset ALL_PROXY NO_PROXY
+unset all_proxy http_proxy https_proxy no_proxy socks_proxy
 
-	export SOCKS_DIRECTROUTE_FALLBACK=yes
+init () {
+	[ "${1}" = "" ] && exit 1 || SERVER="${1}"
+	[ "${2}" = "" ] && PORT="1080" || PORT="${2}"
 
-	case ${1} in
-	*:* )
-		export SOCKS_SERVER=${SERVER}
-		echo -e "Proxy: \e[92m${SOCKS_SERVER}\e[m"
-	;;
-	* )
-		export SOCKS_SERVER="${SERVER}:${PORT}"
-		export SOCKS_DIRECTROUTE_FALLBACK=yes
-		echo -e "Proxy: \e[92m${SOCKS_SERVER}\e[m"
-	esac
-	return
+	export SOCKS_SERVER="${SERVER}:${PORT}"
+	#export SOCKS_AUTOADD_LANROUTES=no
+	#export SOCKS_DISABLE_THREADLOCK
+	#export SOCKS_DIRECTROUTE_FALLBACK=yes
+	
+	echo -e "\e[1mConnect: ${SOCKS_SERVER}\e[m"
+	
 }
 
-case ${1} in
-	"-f" )
-		socksify_init ${2} ${3}
-		socksify ./main.py
-	;;
-	[0-9]* )
-		socksify_init ${1} ${2}
-		socksify ./main.py 2>/dev/null &
-	;;
-	*:* )
-		socksify_init ${1}
-		socksify ./main.py 2>/dev/null &
-	;;
-	* )
-		echo "usage: proxy.sh [option] ... [arg] ..."
-	;;
-esac
+. ggpo/scripts/shell-functions.sh
+find_python
 
-exit 0
+init ${1} ${2}
+socksify ${PYTHON} ./main.py 2>/dev/null &
+
 
