@@ -1,47 +1,54 @@
 #!/bin/sh
 #
 
-WINE=`which wine`
+cd "${0%/*}"
 
-echo $WINE
+. ggpo/scripts/shell-functions.sh
+find_python
 
-FBA="ggpofba-ng.exe"
 PARAM=${1+"$@"}
 
-#
-echo ${PARAM} |grep "^fightcade://challenge-.*@" > /dev/null
+THIS_SCRIPT_PATH=`readlink -f $0 2>/dev/null || pwd`
+THIS_SCRIPT_DIR=`dirname ${THIS_SCRIPT_PATH}`
 
-if [ $? -eq 0 ]
-then
-	quark=$(echo ${PARAM} |cut -f 1 -d "@" |cut -f 3 -d "/")
-	games=$(echo ${PARAM} |cut -f 2 -d "@")
-	PARAM="quark:stream, ${games}, ${quark}, 7000 -w"
-fi
+FBA="./ggpofba.py"
 
-# 
-if [ $(uname -s) = "Linux" ]
-then
-	tot=$(ps ax |grep ggpofba-ng.exe |grep quark |wc -l)
+[ ! -x ${FBA} ] && {
+	FBA="${THIS_SCRIPT_DIR}/ggpofba.py"
+}
 
-	# resets pulseaudio
-	if [ $tot -eq 0 ]
-	then
-		VOL=$(pacmd dump |grep "^set-sin-volume" |tail -n 1 |awk '{print $3}')
-		/usr/bin/pulseaudio --kill
-		/usr/bin/pulseaudio --start
-	fi
+[ ! -x ${FBA} ] && {
+	echo "Can't find ggpofba"
+	exit 1
+}
 
-	#${WINE} ${FBA} quark:direct, ${ROM}, ${PORT1}, ${IP}, ${PORT2}, ${IP2} &
-	echo $PARAM > ggpofba.sh.log
-	WINEDEBUG=-all \
-	${WINE} ${FBA} ${PARAM} &
+echo ${PARAM} | grep "^fightcade://challenge-.*@" >/dev/null
 
-	if [ $tot -eq 0 ]
-	then
-		sleep 1
-		pactl set-sink-volume 0 ${VOL}
-	fi
-fi
+[ $? -eq 0 ] && {
+	quark=$(echo ${PARAM} | cut -f 1 -d "@" | cut -f 3 -d "/")
+	games=$(echo ${PARAM} | cut -f 2 -d "@")
+	PARAM="quark:stream, ${games}, ${quark}, 7001 -w"
+}
 
-exit 1
+[ ! -x /usr/bin/pulseaudio ] || [ ! -x /usr/bin/pacmd ] || [ ! -x /usr/bin/pactl ] && {
+	${PYTHON} ${FBA} ${PARAM} &
+	exit 0
+}
+
+tot=$(/usr/bin/pacmd list-sink-inputs | grep ">>>.*sink input(s) available." | head -n 1 | awk '{print $2}')
+
+[ -z "${tot}" ] && tor=99
+
+[ ${tot} -eq 0 ] && {
+	VOL=$(/usr/bin/pacmd dump | grep "^set-sink-volume" | tail -n 1 | awk '{print $3}')
+	/usr/bin/pulseaudio -k
+	/usr/bin/pulseaudio --start
+}
+
+${PYTHON} ${FBA} ${PARAM} &
+
+[ ${tot} -eq 0 ] && {
+	sleep 1s
+	/usr/bin/pactl set-sink-volume 0 ${VOL}
+}
 
