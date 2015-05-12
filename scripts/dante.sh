@@ -2,58 +2,58 @@
 
 cd "${0%/*}"
 
-if [ ! -x "$(pwd)/fightcade" ]
-then
-	echo "$(pwd)/fightcade"
-	exit 1
-fi
+[ ! -x `which socksify` ] && exit 1
 
-init () {
+. ggpo/scripts/shell-functions.sh
+find_python
+
+socksify_init () {
 	[ "${1}" = "" ] && exit 1 || SERVER="${1}"
 	[ "${2}" = "" ] && PORT="8080" || PORT="${2}"
+
+	export UPNP_IGD
 
 	case ${1} in
 		*:* )
 			export HTTP_CONNECT_PROXY="http://${SERVER}"
-			echo -e "Proxy: ${HTTP_CONNECT_PROXY}"
 		;;
 		* )
 			export HTTP_CONNECT_PROXY="http://${SERVER}:${PORT}"
-			echo -e "Proxy: ${HTTP_CONNECT_PROXY}"
 		;;
 	esac
+	echo -e "\e[1mConnect: ${HTTP_CONNECT_PROXY}\e[m"
 	return
+}
+
+socksify_ggpo () {
+	socksify ${PYTHON} ./main.py 1>/dev/null 2>/dev/null
 }
 
 unset ALL_PROXY NO_PROXY
 unset all_proxy http_proxy https_proxy no_proxy socks_proxy
 
-if [ -f $HOME/fightcade.log ]
-then
-	rm $HOME/fightcade*.log
-fi
-
-. ggpo/scripts/shell-functions.sh
-find_python
+[ -f $HOME/fightcade.log ] && rm $HOME/fightcade*.log
 
 ARG=${@}
 
 case ${ARG} in
-	*"-f"* )
-		init ${2} ${3}
-		socksify ${PYTHON} ./main.py
+	*-f* )
+		socksify_init ${2} ${3}
+		socksify_ggpo
 	;;
-	*"-s"* )
+	*-l* )
+		socksify_init "127.0.0.1" "8001"
+		socksify_ggpo
+	;;
+	*-n* )
+		${PYTHON} ./main.py 1>/dev/null 2>/dev/null &
 	;;
 	[0-9]* )
-		init ${1} ${2}
-		socksify ${PYTHON} ./main.py 2>/dev/null &
+		socksify_init ${1} ${2}
+		socksify_ggpo &
 	;;
 	* )
-		echo "usage: dante.sh [option] ... [arg] ..."
-		echo "Options:"
-		echo -e "-f\t: foreground run"
-		echo ${ARG}
+		echo dante.sh
 	;;
 esac
 
